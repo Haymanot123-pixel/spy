@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Who is the Spy</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family: Arial, sans-serif;
+    min-height:100vh;
+    background: linear-gradient(135deg,#141e30,#243b55);
+    color:white;
+    padding:20px;
+}
+
+.container{
+    max-width:800px;
+    margin:auto;
+    background:rgba(255,255,255,0.08);
+    padding:25px;
+    border-radius:25px;
+    backdrop-filter:blur(10px);
+    box-shadow:0 0 25px rgba(0,0,0,0.4);
+}
+
+h1{
+    text-align:center;
+    margin-bottom:25px;
+    font-size:40px;
+}
+
+.section{
+    margin-top:30px;
+}
+
+h2{
+    margin-bottom:15px;
+}
+
+input,
+select,
+button{
+    width:100%;
+    padding:15px;
+    margin-top:10px;
+    border:none;
+    border-radius:14px;
+    font-size:16px;
+}
+
+input,
+select{
+    background:white;
+}
+
+button{
+    background:#00c853;
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover{
+    background:#00e676;
+    transform:scale(1.02);
+}
+
+.players-list,
+.words-list{
+    margin-top:15px;
+}
+
+.tag{
+    display:inline-block;
+    background:rgba(255,255,255,0.15);
+    padding:8px 14px;
+    border-radius:20px;
+    margin:5px;
+}
+
+.game-area{
+    margin-top:30px;
+}
+
+.player-card{
+    background:rgba(255,255,255,0.1);
+    padding:20px;
+    border-radius:20px;
+    margin-top:20px;
+    text-align:center;
+    animation:fadeIn 0.5s ease;
+}
+
+.player-card h3{
+    margin-bottom:15px;
+}
+
+.secret-word{
+    margin-top:15px;
+    font-size:28px;
+    color:#ffeb3b;
+    display:none;
+    animation:glow 1s infinite alternate;
+}
+
+.timer{
+    text-align:center;
+    font-size:30px;
+    margin-top:20px;
+    font-weight:bold;
+}
+
+.spy-reveal{
+    text-align:center;
+    margin-top:30px;
+    font-size:30px;
+
+    color:#ff5252;
+    display:none;
+}
+
+.vote-buttons button{
+    margin-top:10px;
+}
+
+.light-mode{
+    background:linear-gradient(135deg,#f5f5f5,#dfe9f3);
+    color:black;
+}
+
+.light-mode .container{
+    background:white;
+    color:black;
+}
+
+@keyframes fadeIn{
+    from{
+        opacity:0;
+        transform:translateY(15px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+@keyframes glow{
+    from{
+        text-shadow:0 0 5px #fff;
+    }
+    to{
+        text-shadow:0 0 20px #ffeb3b;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🕵️ Who is the Spy</h1>
+
+    <button onclick="toggleMode()">🌙 Toggle Dark/Light</button>
+
+    <!-- ADD PLAYERS -->
+    <div class="section">
+        <h2>Add Players</h2>
+
+        <input type="text" id="playerInput" placeholder="Enter player name">
+
+        <button onclick="addPlayer()">Add Player</button>
+
+        <div class="players-list" id="playersList"></div>
+    </div>
+
+    <!-- ADD WORDS -->
+    <div class="section">
+        <h2>Add Words</h2>
+
+        <input type="text" id="word1" placeholder="Normal Word">
+
+        <input type="text" id="word2" placeholder="Spy Similar Word">
+
+        <button onclick="saveWords()">Save Words</button>
+
+        <div class="words-list" id="wordsList"></div>
+    </div>
+
+    <!-- START GAME -->
+    <div class="section">
+        <h2>Start Game</h2>
+
+        <button onclick="startGame()">Assign Roles</button>
+    </div>
+
+    <!-- TIMER -->
+    <div class="timer" id="timer"></div>
+
+    <!-- GAME AREA -->
+    <div class="game-area" id="gameArea"></div>
+
+    <!-- REVEAL SPY -->
+    <div class="spy-reveal" id="spyReveal"></div>
+
+</div>
+
+<script>
+
+let players = [];
+let normalWord = "";
+let spyWord = "";
+let spyIndex = -1;
+
+function addPlayer(){
+
+    const input = document.getElementById("playerInput");
+
+    const name = input.value.trim();
+
+    if(name === ""){
+        alert("Enter player name");
+        return;
+    }
+
+    players.push({
+        name:name,
+        word:""
+    });
+
+    input.value = "";
+
+    displayPlayers();
+}
+
+function displayPlayers(){
+
+    const list = document.getElementById("playersList");
+
+    list.innerHTML = "";
+
+    players.forEach(player => {
+
+        list.innerHTML += `
+            <span class="tag">${player.name}</span>
+        `;
+    });
+}
+
+function saveWords(){
+
+    normalWord = document.getElementById("word1").value.trim();
+
+    spyWord = document.getElementById("word2").value.trim();
+
+    if(normalWord === "" || spyWord === ""){
+        alert("Enter both words");
+        return;
+    }
+
+    document.getElementById("wordsList").innerHTML = `
+        <span class="tag">Normal: ${normalWord}</span>
+        <span class="tag">Spy: ${spyWord}</span>
+    `;
+}
+
+function startGame(){
+
+    if(players.length < 3){
+        alert("Need at least 3 players");
+        return;
+    }
+
+    if(normalWord === "" || spyWord === ""){
+        alert("Add words first");
+        return;
+    }
+
+    spyIndex = Math.floor(Math.random() * players.length);
+
+    players.forEach((player,index)=>{
+
+        if(index === spyIndex){
+            player.word = spyWord;
+        }else{
+            player.word = normalWord;
+        }
+
+    });
+
+    alert("Roles Assigned! Pass the phone carefully.");
+
+    showPlayerCards();
+
+    startTimer();
+}
+
+function showPlayerCards(){
+
+    const gameArea = document.getElementById("gameArea");
+
+    gameArea.innerHTML = "";
+
+    players.forEach(player => {
+
+        const card = document.createElement("div");
+
+        card.className = "player-card";
+
+        card.innerHTML = `
+            <h3>${player.name}</h3>
+
+            <button onclick="revealWord('${player.name}')">
+                Reveal Word
+            </button>
+
+            <div class="secret-word" id="word-${player.name}">
+                ${player.word}
+            </div>
+
+            <div class="vote-buttons">
+                <button onclick="votePlayer('${player.name}')">
+                    Vote This Player
+                </button>
+            </div>
+        `;
+
+        gameArea.appendChild(card);
+
+    });
+}
+
+function revealWord(name){
+
+    const player = players.find(p => p.name === name);
+
+    const wordDiv = document.getElementById(`word-${name}`);
+
+    wordDiv.style.display = "block";
+
+    setTimeout(()=>{
+
+        wordDiv.style.display = "none";
+
+    },3000);
+}
+
+let time = 60;
+let timerInterval;
+
+function startTimer(){
+
+    clearInterval(timerInterval);
+
+    time = 60;
+
+    timerInterval = setInterval(()=>{
+
+        document.getElementById("timer").innerText =
+        `⏳ Time Left: ${time}s`;
+
+        if(time <= 0){
+
+            clearInterval(timerInterval);
+
+            document.getElementById("timer").innerText =
+            "Time is up! Vote now!";
+
+        }
+
+        time--;
+
+    },1000);
+}
+
+let votes = {};
+
+function votePlayer(name){
+
+    if(!votes[name]){
+        votes[name] = 0;
+    }
+
+    votes[name]++;
+
+    alert(`${name} now has ${votes[name]} vote(s)`);
+
+    checkWinner();
+}
+
+function checkWinner(){
+
+    for(let playerName in votes){
+
+        if(votes[playerName] >= 2){
+
+            const spyName = players[spyIndex].name;
+
+            const reveal = document.getElementById("spyReveal");
+
+            reveal.style.display = "block";
+
+            if(playerName === spyName){
+
+                reveal.innerHTML =
+                `🎉 ${playerName} was the SPY! Players win!`;
+
+            }else{
+
+                reveal.innerHTML =
+                `😈 Wrong Guess! The spy was ${spyName}`;
+
+            }
+
+        }
+    }
+}
+
+function toggleMode(){
+
+    document.body.classList.toggle("light-mode");
+}
+
+</script>
+
+</body>
+</html>
